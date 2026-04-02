@@ -1,0 +1,1 @@
+web: gunicorn [wazifni_backend.wsgi].wsgi
