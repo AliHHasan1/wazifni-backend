@@ -163,3 +163,12 @@ CORS_ALLOWED_ORIGINS = [
 
 # Custom User Model
 AUTH_USER_MODEL = 'users.User'
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.railway.app',  # يسمح لجميع نطاقات ريلوي
+    'https://your-domain.up.railway.app', # استبدل هذا برابط موقعك الحقيقي
+]
+
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_HTTPONLY = True
