@@ -1,1 +1,1 @@
-web: gunicorn [wazifni_backend.wsgi].wsgi
+web: python manage.py migrate && gunicorn [wazifni_backend.wsgi].wsgi
