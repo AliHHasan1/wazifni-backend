@@ -1,6 +1,6 @@
 from rest_framework.routers import DefaultRouter
 from .views import ProfileViewSet, ExperienceViewSet, EducationViewSet, SkillViewSet, CVViewSet, ProjectViewSet, CertificationViewSet
-
+from django.urls import path
 router = DefaultRouter()
 router.register(r"profiles", ProfileViewSet)
 router.register(r"experiences", ExperienceViewSet)
