@@ -82,6 +82,7 @@ class ProfileSerializer(serializers.ModelSerializer):
                 incoming_ids.append(item_id)
             else:
                 # إنشاء عنصر جديد وربطه بالبروفايل
+                item_data.pop('id', None)
                 serializer = serializer_class(data=item_data, context=context)
                 serializer.is_valid(raise_exception=True)
                 serializer.save(profile=instance) # ربط مباشر بالبروفايل الحالي
@@ -89,9 +90,9 @@ class ProfileSerializer(serializers.ModelSerializer):
                     incoming_ids.append(serializer.instance.id)
 
         # حذف العناصر التي لم ترسل في الطلب (لتحقيق مبدأ المزامنة)
-        for eid in existing_items.keys():
+        for eid, item in existing_items.items():
             if eid not in incoming_ids:
-                existing_items[eid].delete()
+                item.delete()
     def update(self, instance, validated_data):
         # Update direct fields on the Profile instance
         instance.bio = validated_data.get('bio', instance.bio)
