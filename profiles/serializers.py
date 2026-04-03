@@ -66,37 +66,31 @@ class ProfileSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def update_nested_field(self, instance, field_name, serializer_class, data):
-        # Get the related manager for the field (e.g., instance.experiences)
         related_manager = getattr(instance, field_name)
-        existing_ids = set(related_manager.values_list('id', flat=True))
-        incoming_ids = set()
+        existing_items = {item.id: item for item in related_manager.all()}
+        incoming_ids = []
 
         for item_data in data:
             item_id = item_data.get('id')
-            if item_id:
-                incoming_ids.add(item_id)
-                try:
-                    item_instance = related_manager.get(id=item_id)
-                    serializer = serializer_class(item_instance, data=item_data, partial=True, context={'profile': instance})
-                    serializer.is_valid(raise_exception=True)
-                    serializer.save()
-                except related_manager.model.DoesNotExist:
-                    # If an ID is provided but the instance doesn't exist, it's an error or new creation with ID
-                    # For simplicity, we'll treat it as a new creation if ID not found, but typically it should be an update.
-                    # Or raise an error if ID is provided but not found.
-                    serializer = serializer_class(data=item_data, context={'profile': instance})
-                    serializer.is_valid(raise_exception=True)
-                    serializer.save()
-            else:
-                # Create new instance if no ID is provided
-                serializer = serializer_class(data=item_data, context={'profile': instance})
+            if item_id and item_id in existing_items:
+                # تحديث عنصر موجود
+                item_instance = existing_items[item_id]
+                serializer = serializer_class(item_instance, data=item_data, partial=True)
                 serializer.is_valid(raise_exception=True)
                 serializer.save()
+                incoming_ids.append(item_id)
+            else:
+                # إنشاء عنصر جديد وربطه بالبروفايل
+                serializer = serializer_class(data=item_data)
+                serializer.is_valid(raise_exception=True)
+                serializer.save(profile=instance) # ربط مباشر بالبروفايل الحالي
+                if serializer.instance:
+                    incoming_ids.append(serializer.instance.id)
 
-        # Delete instances that were not in the incoming data
-        for item_id_to_delete in existing_ids - incoming_ids:
-            related_manager.filter(id=item_id_to_delete).delete()
-
+        # حذف العناصر التي لم ترسل في الطلب (لتحقيق مبدأ المزامنة)
+        for eid in existing_items.keys():
+            if eid not in incoming_ids:
+                existing_items[eid].delete()
     def update(self, instance, validated_data):
         # Update direct fields on the Profile instance
         instance.bio = validated_data.get('bio', instance.bio)
