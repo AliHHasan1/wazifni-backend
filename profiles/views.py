@@ -19,9 +19,11 @@ class ProfileViewSet(viewsets.ModelViewSet):
             return Response(serializer.data)
         elif request.method == 'PATCH':
             serializer = self.get_serializer(profile, data=request.data, partial=True)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            return Response(serializer.data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
