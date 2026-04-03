@@ -72,16 +72,17 @@ class ProfileSerializer(serializers.ModelSerializer):
 
         for item_data in data:
             item_id = item_data.get('id')
+            context = {'profile': instance}
             if item_id and item_id in existing_items:
                 # تحديث عنصر موجود
                 item_instance = existing_items[item_id]
-                serializer = serializer_class(item_instance, data=item_data, partial=True)
+                serializer = serializer_class(item_instance, data=item_data, partial=True,context=context)
                 serializer.is_valid(raise_exception=True)
                 serializer.save()
                 incoming_ids.append(item_id)
             else:
                 # إنشاء عنصر جديد وربطه بالبروفايل
-                serializer = serializer_class(data=item_data)
+                serializer = serializer_class(data=item_data, context=context)
                 serializer.is_valid(raise_exception=True)
                 serializer.save(profile=instance) # ربط مباشر بالبروفايل الحالي
                 if serializer.instance:
