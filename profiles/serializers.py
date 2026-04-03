@@ -85,7 +85,7 @@ class ProfileSerializer(serializers.ModelSerializer):
                 item_data.pop('id', None)
                 serializer = serializer_class(data=item_data, context=context)
                 serializer.is_valid(raise_exception=True)
-                serializer.save(profile=instance) # ربط مباشر بالبروفايل الحالي
+                serializer.save() # ربط مباشر بالبروفايل الحالي
                 if serializer.instance:
                     incoming_ids.append(serializer.instance.id)
 
@@ -93,14 +93,8 @@ class ProfileSerializer(serializers.ModelSerializer):
         for eid, item in existing_items.items():
             if eid not in incoming_ids:
                 item.delete()
-    def update(self, instance, validated_data):
-        # Update direct fields on the Profile instance
-        instance.bio = validated_data.get('bio', instance.bio)
-        instance.portfolio = validated_data.get('portfolio', instance.portfolio)
-        instance.linkedin = validated_data.get('linkedin', instance.linkedin)
-        instance.save()
 
-        # Handle nested fields
+    def update(self, instance, validated_data):
         nested_fields_map = {
             'experiences': ExperienceSerializer,
             'education': EducationSerializer,
@@ -109,9 +103,22 @@ class ProfileSerializer(serializers.ModelSerializer):
             'certifications': CertificationSerializer,
         }
 
-        for field_name, serializer_class in nested_fields_map.items():
+        # 💥 اسحب nested data قبل ما تخرب الدنيا
+        nested_data = {}
+        for field_name in nested_fields_map.keys():
             if field_name in validated_data:
-                self.update_nested_field(instance, field_name, serializer_class, validated_data[field_name])
+                nested_data[field_name] = validated_data.pop(field_name)
+
+        # Update normal fields
+        instance.bio = validated_data.get('bio', instance.bio)
+        instance.portfolio = validated_data.get('portfolio', instance.portfolio)
+        instance.linkedin = validated_data.get('linkedin', instance.linkedin)
+        instance.save()
+
+        # Update nested بعد ما فصلناهم
+        for field_name, serializer_class in nested_fields_map.items():
+            if field_name in nested_data:
+                self.update_nested_field(instance, field_name, serializer_class, nested_data[field_name])
 
         return instance
 
