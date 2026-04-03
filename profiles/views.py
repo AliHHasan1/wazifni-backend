@@ -10,6 +10,19 @@ from services.ai_service import GeminiAIService
 
 
 class ProfileViewSet(viewsets.ModelViewSet):
+    @action(detail=False, methods=['get', 'patch'], url_path='me')
+    def me(self, request):
+        if request.method == 'GET':
+            profile = self.get_queryset().get()
+            serializer = self.get_serializer(profile)
+            return Response(serializer.data)
+        elif request.method == 'PATCH':
+            profile = self.get_queryset().get()
+            serializer = self.get_serializer(profile, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data)
+
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
     permission_classes = [permissions.IsAuthenticated]

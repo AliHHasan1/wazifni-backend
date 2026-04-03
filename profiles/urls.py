@@ -11,3 +11,6 @@ router.register(r"certifications", CertificationViewSet) # Added for the new Cer
 router.register(r"cvs", CVViewSet)
 
 urlpatterns = router.urls
+urlpatterns += [
+    path("me/", ProfileViewSet.as_view({"get": "me", "patch": "me"}), name="profile-me"),
+]
