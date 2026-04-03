@@ -74,6 +74,8 @@ class ProfileSerializer(serializers.ModelSerializer):
         for item_data in data:
             item_id = item_data.get('id')
             context = {'profile': instance}
+            if item_id:
+                item_id = int(item_id)
 
             if item_id and item_id in existing_items:
                 # ✅ update
