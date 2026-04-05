@@ -20,27 +20,27 @@ class BaseProfileRelatedSerializer(serializers.ModelSerializer):
 class ExperienceSerializer(BaseProfileRelatedSerializer):
     class Meta:
         model = Experience
-        exclude = ('profile',)
+        fields = "__all__"
 
 class EducationSerializer(BaseProfileRelatedSerializer):
     class Meta:
         model = Education
-        exclude = ('profile',)
+        fields = "__all__"
 
 class SkillSerializer(BaseProfileRelatedSerializer):
     class Meta:
         model = Skill
-        exclude = ('profile',)
+        fields = "__all__"
 
 class ProjectSerializer(BaseProfileRelatedSerializer):
     class Meta:
         model = Project
-        exclude = ('profile',)
+        fields = "__all__"
 
 class CertificationSerializer(BaseProfileRelatedSerializer):
     class Meta:
         model = Certification
-        exclude = ('profile',)
+        fields = "__all__"
 
 class CVSerializer(serializers.ModelSerializer):
     generated_json_content = serializers.JSONField(required=False)

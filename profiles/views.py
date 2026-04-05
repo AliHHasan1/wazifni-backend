@@ -8,42 +8,34 @@ import os
 from .serializers import ProfileSerializer, ExperienceSerializer, EducationSerializer, SkillSerializer, CVSerializer, ProjectSerializer, CertificationSerializer
 from services.ai_service import GeminiAIService
 
+from django.shortcuts import get_object_or_404
+
 
 class ProfileViewSet(viewsets.ModelViewSet):
-    @action(detail=False, methods=['get', 'patch'], url_path='me')
-    def me(self, request):
-        profile = self.get_object()
-        if request.method == 'GET':
-            profile = self.get_queryset().get()
-            serializer = self.get_serializer(profile)
-            return Response(serializer.data)
-        elif request.method == 'PATCH':
-            serializer = self.get_serializer(profile, data=request.data, partial=True)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_200_OK)
-
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # Ensure users can only access their own profile
         return self.queryset.filter(user=self.request.user)
 
     def get_object(self):
-        # Ensure that the retrieve, update, partial_update methods operate on the current user's profile
-        return self.get_queryset().get()
+        # 👈 هكذا نحمي السيرفر من الانفجار بـ 500 إذا لم يوجد البروفايل
+        return get_object_or_404(self.get_queryset())
 
-    def perform_create(self, serializer):
-        # Profile is typically created during user registration, so this might not be directly called.
-        # If it were, ensure it's linked to the current user.
-        serializer.save(user=self.request.user)
+    @action(detail=False, methods=['get', 'patch'], url_path='me')
+    def me(self, request):
+        profile = self.get_object()  # 👈 استدعاء واحد فقط نظيف ومحمي
 
-    # The update and partial_update methods will implicitly use the ProfileSerializer's update method,
-    # which now handles nested fields. No explicit override needed here unless custom logic is required.
+        if request.method == 'GET':
+            serializer = self.get_serializer(profile)
+            return Response(serializer.data)
+
+        elif request.method == 'PATCH':
+            serializer = self.get_serializer(profile, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)  # 👈 دع السريالايزر يرمي الأخطاء تلقائياً
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class BaseProfileRelatedViewSet(viewsets.ModelViewSet):
