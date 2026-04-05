@@ -3,7 +3,6 @@ from .models import Profile, Experience, Education, Skill, CV, Project, Certific
 from users.serializers import UserSerializer
 
 class BaseProfileRelatedSerializer(serializers.ModelSerializer):
-    profile = serializers.PrimaryKeyRelatedField(read_only=True)
 
     def create(self, validated_data):
         profile = self.context.get("profile")
@@ -20,27 +19,27 @@ class BaseProfileRelatedSerializer(serializers.ModelSerializer):
 class ExperienceSerializer(BaseProfileRelatedSerializer):
     class Meta:
         model = Experience
-        fields = "__all__"
+        exclude = ('profile',)
 
 class EducationSerializer(BaseProfileRelatedSerializer):
     class Meta:
         model = Education
-        fields = "__all__"
+        exclude = ('profile',)
 
 class SkillSerializer(BaseProfileRelatedSerializer):
     class Meta:
         model = Skill
-        fields = "__all__"
+        exclude = ('profile',)
 
 class ProjectSerializer(BaseProfileRelatedSerializer):
     class Meta:
         model = Project
-        fields = "__all__"
+        exclude = ('profile',)
 
 class CertificationSerializer(BaseProfileRelatedSerializer):
     class Meta:
         model = Certification
-        fields = "__all__"
+        exclude = ('profile',)
 
 class CVSerializer(serializers.ModelSerializer):
     generated_json_content = serializers.JSONField(required=False)
