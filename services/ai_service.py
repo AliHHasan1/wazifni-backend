@@ -2,17 +2,23 @@ import google.generativeai as genai
 import os
 import json
 from django.conf import settings
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class GeminiAIService:
     def __init__(self):
         api_key = os.getenv("GEMINI_API_KEY")
+
         if not api_key:
-            api_key = "YOUR_GEMINI_API_KEY" # REPLACE THIS WITH YOUR REAL KEY
-        
-        print(f"--- DEBUG: Using API Key starting with: {api_key[:4]}... ---")
-        
+            raise ValueError("Could not find GEMINI_API_KEY. Check your .env file.")
+
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel("gemini-2.5-flash")
+
+        try:
+            self.model = genai.GenerativeModel("gemini-2.5-flash")
+        except Exception as e:
+            raise Exception(f"Model Initialization Failed: {str(e)}")
 
     def generate_tailored_cv_content(self, profile_data, job_description=None, user_prompt=None):
         user = profile_data.get("user", {})
@@ -102,7 +108,7 @@ class GeminiAIService:
     \"email\": \"[Email Address]\",
     \"phone\": \"[Phone Number]\",
     \"address\": \"[Address]\",
-    \"linkedin\": \"[LinkedIn Profile URL]\", # Added linkedin
+    \"linkedin\": \"[LinkedIn Profile URL]\",
     \"portfolio\": \"[Portfolio URL]\"
   },
   \"summary\": \"[Strong professional summary, tailored for the job or general]\",
@@ -166,13 +172,23 @@ class GeminiAIService:
 
         try:
             response = self.model.generate_content(full_prompt)
+
+            if not response or not response.candidates:
+                raise Exception("AI returned an empty response (Check safety settings or quota).")
+
             content = response.text.strip()
-            
-            if content.startswith("```json"):
-                content = content[7:-3].strip()
-            elif content.startswith("```"):
-                content = content[3:-3].strip()
-            
-            return json.loads(content)
+
+            if "```json" in content:
+                content = content.split("```json")[1].split("```")[0].strip()
+            elif "```" in content:
+                content = content.split("```")[1].split("```")[0].strip()
+
+            try:
+                return json.loads(content)
+            except json.JSONDecodeError as e:
+                print(f"--- FAILED CONTENT: {content} ---")
+                raise Exception(f"AI output is not a valid JSON. Error: {str(e)}")
+
         except Exception as e:
-            raise Exception(f"AI Content Generation Failed: {str(e)}")
+            print(f"--- CRITICAL AI ERROR: {str(e)} ---")
+            raise Exception(f"Detailed AI Error: {str(e)}")
