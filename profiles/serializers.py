@@ -20,27 +20,27 @@ class BaseProfileRelatedSerializer(serializers.ModelSerializer):
 class ExperienceSerializer(BaseProfileRelatedSerializer):
     class Meta:
         model = Experience
-        fields = "__all__"
+        exclude = ('profile',)
 
 class EducationSerializer(BaseProfileRelatedSerializer):
     class Meta:
         model = Education
-        fields = "__all__"
+        exclude = ('profile',)
 
 class SkillSerializer(BaseProfileRelatedSerializer):
     class Meta:
         model = Skill
-        fields = "__all__"
+        exclude = ('profile',)
 
 class ProjectSerializer(BaseProfileRelatedSerializer):
     class Meta:
         model = Project
-        fields = "__all__"
+        exclude = ('profile',)
 
 class CertificationSerializer(BaseProfileRelatedSerializer):
     class Meta:
         model = Certification
-        fields = "__all__" # Removed expiration_date and is_current from model, so __all__ will reflect that
+        exclude = ('profile',)
 
 class CVSerializer(serializers.ModelSerializer):
     generated_json_content = serializers.JSONField(required=False)
@@ -66,30 +66,45 @@ class ProfileSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def update_nested_field(self, instance, field_name, serializer_class, data):
+        """
+        Logic for Full State Sync:
+        1. Identify existing items in the database.
+        2. Identify items to update (have an ID present in DB).
+        3. Identify items to create (no ID or ID not in DB).
+        4. Identify items to delete (in DB but missing from the request).
+        """
         related_manager = getattr(instance, field_name)
         existing_items = {item.id: item for item in related_manager.all()}
-        incoming_ids = []
-
+        incoming_ids = set()
 
         for item_data in data:
-            item_id = item_data.get('id')
+            # Ensure ID is an integer if it exists
+            raw_id = item_data.get('id')
+            item_id = int(raw_id) if raw_id is not None else None
+            
             context = {'profile': instance}
-            if item_id:
-                item_id = int(item_id)
-
+            
             if item_id and item_id in existing_items:
-                # ✅ update
+                # ✅ Update existing item
+                incoming_ids.add(item_id)
                 item_instance = existing_items[item_id]
-                serializer = serializer_class(item_instance,data=item_data,partial=True,context=context)
+                serializer = serializer_class(item_instance, data=item_data, partial=True, context=context)
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
+            else:
+                # ✅ Create new item (ignore invalid or missing IDs)
+                # Create a copy to avoid modifying original data if needed elsewhere
+                create_data = item_data.copy()
+                create_data.pop('id', None)
+                serializer = serializer_class(data=create_data, context=context)
                 serializer.is_valid(raise_exception=True)
                 serializer.save()
 
-            else:
-                # ✅ create
-                item_data.pop('id', None)
-                serializer = serializer_class(data=item_data, context=context)
-                serializer.is_valid(raise_exception=True)
-                serializer.save() # ربط مباشر بالبروفايل الحالي
+        # 🗑️ Delete items that were in DB but NOT in the incoming request
+        existing_ids = set(existing_items.keys())
+        ids_to_delete = existing_ids - incoming_ids
+        if ids_to_delete:
+            related_manager.filter(id__in=ids_to_delete).delete()
 
     def update(self, instance, validated_data):
         nested_fields_map = {
