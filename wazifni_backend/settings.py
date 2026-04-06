@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'cloudinary',
+    'cloudinary_storage',
     'rest_framework',
     'rest_framework_simplejwt', # Added for JWT
     'corsheaders',
@@ -152,9 +154,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 import os
 
 MEDIA_URL = '/media/'
-# هذا السطر يخبر Django أن يضع الملفات في مجلد اسمه media في جذر المشروع
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 

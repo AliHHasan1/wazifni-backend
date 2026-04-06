@@ -12,3 +12,5 @@ Pillow==10.4.0
 requests==2.32.3
 whitenoise
 gunicorn==21.2.0
+cloudinary
+django-cloudinary-storage
