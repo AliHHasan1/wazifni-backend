@@ -5,7 +5,12 @@ from users.models import User
 
 class JobSerializer(serializers.ModelSerializer):
     organization = OrganizationSerializer(read_only=True)
-    organization_id = serializers.PrimaryKeyRelatedField(queryset=User.objects.filter(user_type='organization'), source='organization', write_only=True)
+    organization_id = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(user_type='organization'), 
+        source='organization', 
+        write_only=True,
+        required=False
+    )
 
     class Meta:
         model = Job
