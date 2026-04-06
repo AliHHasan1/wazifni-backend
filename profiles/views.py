@@ -145,8 +145,10 @@ class CVViewSet(viewsets.ModelViewSet):
         ai_service = GeminiAIService()
         # Explicitly request English ATS-friendly content
         english_prompt = "Generate a comprehensive general CV in English, optimized for ATS, based on the provided profile data. Ensure all content is in English."
-        general_cv_json = ai_service.generate_tailored_cv_content(profile_data, "", english_prompt)
-
+        try:
+            general_cv_json = ai_service.generate_tailored_cv_content(profile_data, "", english_prompt)
+        except Exception as e:
+            return Response({"error_from_ai_service": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         if not general_cv_json:
             return Response({"error": "Failed to generate general CV content."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
