@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'cloudinary_storage',
     'cloudinary',
+    'django_extensions',
     'rest_framework',
     'rest_framework_simplejwt', # Added for JWT
     'corsheaders',
