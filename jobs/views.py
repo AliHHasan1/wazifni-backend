@@ -31,6 +31,36 @@ class JobViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(organization=self.request.user.organization_profile)
 
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="my-jobs",
+        permission_classes=[permissions.IsAuthenticated],
+    )
+    def my_jobs(self, request):
+        if request.user.user_type != "organization":
+            return Response(
+                {"error": "Only organizations can view their posted jobs."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        try:
+            org_profile = request.user.organization_profile
+        except AttributeError:
+            return Response(
+                {"error": "Organization profile not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        queryset = self.get_queryset().filter(organization=org_profile).order_by("-posted_at")
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
     @action(detail=True, methods=["get"], url_path="applications")
     def applications(self, request, pk=None):
         job = self.get_object()
