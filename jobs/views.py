@@ -2,11 +2,16 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import Job, Application
-from .serializers import JobSerializer, ApplicationSerializer
+from .serializers import JobSerializer, MyJobSerializer, ApplicationSerializer
 
 class JobViewSet(viewsets.ModelViewSet):
     queryset = Job.objects.all()
     serializer_class = JobSerializer
+
+    def get_serializer_class(self):
+        if self.action == "my_jobs":
+            return MyJobSerializer
+        return super().get_serializer_class()
 
     def get_permissions(self):
         if self.action in ["create", "update", "partial_update", "destroy"]:

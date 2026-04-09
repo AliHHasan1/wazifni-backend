@@ -16,6 +16,13 @@ class JobSerializer(serializers.ModelSerializer):
         model = Job
         fields = '__all__'
 
+
+class MyJobSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Job
+        exclude = ("organization",)
+
+
 class ApplicationSerializer(serializers.ModelSerializer):
     job = serializers.PrimaryKeyRelatedField(queryset=Job.objects.all())
     candidate = serializers.PrimaryKeyRelatedField(read_only=True)
