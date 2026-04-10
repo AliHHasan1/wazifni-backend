@@ -26,7 +26,12 @@ class MyJobSerializer(serializers.ModelSerializer):
 class ApplicationSerializer(serializers.ModelSerializer):
     job = serializers.PrimaryKeyRelatedField(queryset=Job.objects.all())
     candidate = serializers.PrimaryKeyRelatedField(read_only=True)
+    status = serializers.CharField(read_only=True)
 
     class Meta:
         model = Application
         fields = '__all__'
+
+
+class ApplicationStatusUpdateSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=["reviewed"])
