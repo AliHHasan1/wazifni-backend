@@ -2,7 +2,9 @@ from django.db import models
 from users.models import User
 from jobs.models import Job
 
+
 class Profile(models.Model):
+    """Candidate profile containing bio and contact information."""
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, related_name="candidate_profile")
     bio = models.TextField(blank=True, null=True)
     portfolio = models.URLField(max_length=200, blank=True, null=True)
@@ -11,7 +13,9 @@ class Profile(models.Model):
     def __str__(self):
         return self.user.username
 
+
 class Experience(models.Model):
+    """Work experience entries for a candidate profile."""
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="experiences")
     title = models.CharField(max_length=255)
     company = models.CharField(max_length=255)
@@ -23,7 +27,9 @@ class Experience(models.Model):
     def __str__(self):
         return f"{self.title} at {self.company}"
 
+
 class Education(models.Model):
+    """Educational background entries for a candidate profile."""
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="education")
     institution = models.CharField(max_length=255)
     degree = models.CharField(max_length=255)
@@ -35,7 +41,9 @@ class Education(models.Model):
     def __str__(self):
         return f"{self.degree} in {self.field_of_study} from {self.institution}"
 
+
 class Skill(models.Model):
+    """Skills associated with a candidate profile."""
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="skills")
     name = models.CharField(max_length=100)
     level = models.CharField(max_length=50, blank=True, null=True)
@@ -43,7 +51,9 @@ class Skill(models.Model):
     def __str__(self):
         return self.name
 
+
 class Project(models.Model):
+    """Personal or professional projects for a candidate."""
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="projects")
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
@@ -54,7 +64,9 @@ class Project(models.Model):
     def __str__(self):
         return self.name
 
+
 class Certification(models.Model):
+    """Professional certifications and credentials for a candidate."""
     profile = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="certifications")
     name = models.CharField(max_length=255)
     issuing_organization = models.CharField(max_length=255)
@@ -64,7 +76,9 @@ class Certification(models.Model):
     def __str__(self):
         return f"{self.name} from {self.issuing_organization}"
 
+
 class CV(models.Model):
+    """Generated CV containing PDF and JSON content for a candidate."""
     CV_TYPE_CHOICES = [
         ("general", "General CV"),
         ("job_specific", "Job-Specific CV"),

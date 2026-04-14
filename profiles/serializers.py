@@ -2,7 +2,9 @@ from rest_framework import serializers
 from .models import Profile, Experience, Education, Skill, CV, Project, Certification
 from users.serializers import UserSerializer
 
+
 class BaseProfileRelatedSerializer(serializers.ModelSerializer):
+    """Base serializer for profile-related models with automatic profile assignment."""
 
     def create(self, validated_data):
         profile = self.context.get("profile")
@@ -16,32 +18,39 @@ class BaseProfileRelatedSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
+
 class ExperienceSerializer(BaseProfileRelatedSerializer):
+    """Serializer for work experience entries."""
     class Meta:
         model = Experience
         exclude = ('profile',)
 
 class EducationSerializer(BaseProfileRelatedSerializer):
+    """Serializer for education entries."""
     class Meta:
         model = Education
         exclude = ('profile',)
 
 class SkillSerializer(BaseProfileRelatedSerializer):
+    """Serializer for skill entries."""
     class Meta:
         model = Skill
         exclude = ('profile',)
 
 class ProjectSerializer(BaseProfileRelatedSerializer):
+    """Serializer for project entries."""
     class Meta:
         model = Project
         exclude = ('profile',)
 
 class CertificationSerializer(BaseProfileRelatedSerializer):
+    """Serializer for certification entries."""
     class Meta:
         model = Certification
         exclude = ('profile',)
 
 class CVSerializer(serializers.ModelSerializer):
+    """Serializer for CV entries containing generated content."""
     generated_json_content = serializers.JSONField(required=False)
 
     class Meta:
@@ -49,6 +58,7 @@ class CVSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 class ProfileSerializer(serializers.ModelSerializer):
+    """Main profile serializer with nested support for all related data."""
     user = UserSerializer(read_only=True)
     experiences = ExperienceSerializer(many=True, required=False)
     education = EducationSerializer(many=True, required=False)
@@ -65,13 +75,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def update_nested_field(self, instance, field_name, serializer_class, data):
-        """
-        Logic for Full State Sync:
-        1. Identify existing items in the database.
-        2. Identify items to update (have an ID present in DB).
-        3. Identify items to create (no ID or ID not in DB).
-        4. Identify items to delete (in DB but missing from the request).
-        """
+        """Full state sync: creates, updates, or deletes nested related items based on incoming data."""
         related_manager = getattr(instance, field_name)
         existing_items = {item.id: item for item in related_manager.all()}
         incoming_ids = set()
@@ -125,8 +129,6 @@ class ProfileSerializer(serializers.ModelSerializer):
                 self.update_nested_field(instance, field_name, serializer_class, nested_data[field_name])
 
         return instance
-
-
 
     def create(self, validated_data):
         return super().create(validated_data)

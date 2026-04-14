@@ -1,11 +1,17 @@
 from fpdf import FPDF
 import os
 
+
 class PDFService:
+    """Service class for generating professional CV PDFs."""
+
     def __init__(self):
         self.font_name = "Helvetica"
 
     def _sanitize_text(self, text):
+        """Clean text to ensure FPDF compatibility by replacing special characters."""
+        if not text:
+            return ""
         if not text:
             return ""
         
@@ -30,6 +36,8 @@ class PDFService:
             return "".join(c for c in text if ord(c) < 128)
 
     def generate_cv_pdf(self, cv_json_content: dict, output_path: str):
+        """Generate a professional PDF from CV JSON data with proper formatting."""
+        pdf = FPDF()
         pdf = FPDF()
         pdf.add_page()
         
@@ -232,6 +240,8 @@ class PDFService:
         return True
 
     def _add_section_title(self, pdf, title):
+        """Add a formatted section title with underline to the PDF."""
+        page_width = pdf.w - 2 * pdf.l_margin
         page_width = pdf.w - 2 * pdf.l_margin
         pdf.set_font(self.font_name, "B", 14)
         pdf.set_text_color(0, 0, 0)

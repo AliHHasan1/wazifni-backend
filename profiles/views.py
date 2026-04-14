@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404
 
 
 class ProfileViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing candidate profiles."""
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -20,12 +21,12 @@ class ProfileViewSet(viewsets.ModelViewSet):
         return self.queryset.filter(user=self.request.user)
 
     def get_object(self):
-        # 👈 هكذا نحمي السيرفر من الانفجار بـ 500 إذا لم يوجد البروفايل
         return get_object_or_404(self.get_queryset())
 
     @action(detail=False, methods=['get', 'patch'], url_path='me')
     def me(self, request):
-        profile = self.get_object()  # 👈 استدعاء واحد فقط نظيف ومحمي
+        """Retrieve or update the current authenticated user's profile."""
+        profile = self.get_object()
 
         if request.method == 'GET':
             serializer = self.get_serializer(profile)
@@ -33,19 +34,20 @@ class ProfileViewSet(viewsets.ModelViewSet):
 
         elif request.method == 'PATCH':
             serializer = self.get_serializer(profile, data=request.data, partial=True)
-            serializer.is_valid(raise_exception=True)  # 👈 دع السريالايزر يرمي الأخطاء تلقائياً
+            serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class BaseProfileRelatedViewSet(viewsets.ModelViewSet):
+    """Base ViewSet for profile-related models with automatic profile context injection."""
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         return self.queryset.filter(profile__user=self.request.user)
 
     def get_serializer_context(self):
-        """تجهيز البروفايل ليكون متاحاً داخل السريالايزر تلقائياً"""
+        """Inject the user profile into serializer context for automatic assignment."""
         context = super().get_serializer_context()
         try:
             context["profile"] = self.request.user.candidate_profile
@@ -64,18 +66,17 @@ class BaseProfileRelatedViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def perform_create(self, serializer):
-        # This method is called by the serializer's save() method.
-        # The profile is already injected into the serializer's context in get_serializer_context.
-        # The BaseProfileRelatedSerializer's create method will use this context.
         serializer.save()
 
 
 class ExperienceViewSet(BaseProfileRelatedViewSet):
+    """ViewSet for managing work experience entries."""
     queryset = Experience.objects.all()
     serializer_class = ExperienceSerializer
 
     @action(detail=True, methods=["post"])
     def enhance_description(self, request, pk=None):
+        """Enhance experience description using AI."""
         experience = self.get_object()
 
         if not experience.description:
@@ -105,26 +106,31 @@ class ExperienceViewSet(BaseProfileRelatedViewSet):
 
 
 class EducationViewSet(BaseProfileRelatedViewSet):
+    """ViewSet for managing education entries."""
     queryset = Education.objects.all()
     serializer_class = EducationSerializer
 
 
 class SkillViewSet(BaseProfileRelatedViewSet):
+    """ViewSet for managing skills."""
     queryset = Skill.objects.all()
     serializer_class = SkillSerializer
 
 
 class ProjectViewSet(BaseProfileRelatedViewSet):
+    """ViewSet for managing projects."""
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
 
 
 class CertificationViewSet(BaseProfileRelatedViewSet):
+    """ViewSet for managing certifications."""
     queryset = Certification.objects.all()
     serializer_class = CertificationSerializer
 
 
 class CVViewSet(viewsets.ModelViewSet):
+    """ViewSet for generating and managing CVs with AI assistance."""
     queryset = CV.objects.all()
     serializer_class = CVSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -134,6 +140,7 @@ class CVViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"], url_path="generate-general")
     def generate_general_cv(self, request):
+        """Generate a general-purpose CV using AI, optimized for ATS systems."""
         try:
             profile = request.user.candidate_profile
         except Profile.DoesNotExist:
@@ -167,6 +174,7 @@ class CVViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"], url_path="generate-job-specific")
     def generate_job_specific_cv(self, request):
+        """Generate a job-specific CV tailored to a particular job description."""
         job_id = request.data.get("job_id")
         user_prompt = request.data.get("user_prompt", "")
 
@@ -210,6 +218,7 @@ class CVViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"], url_path="generate-pdf")
     def generate_cv_pdf(self, request, pk=None):
+        """Generate a PDF document from existing CV JSON content."""
         cv_instance = self.get_object()
         if not cv_instance.generated_json_content:
             return Response({"error": "No CV content available to generate PDF."}, status=status.HTTP_400_BAD_REQUEST)

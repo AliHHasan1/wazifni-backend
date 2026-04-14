@@ -2,7 +2,9 @@ from rest_framework import serializers
 from .models import User, Organization
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+
 class UserSerializer(serializers.ModelSerializer):
+    """Serializer for user registration and profile data."""
     full_name = serializers.SerializerMethodField()
 
     class Meta:
@@ -34,6 +36,7 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
 class OrganizationSerializer(serializers.ModelSerializer):
+    """Serializer for organization profile with nested user data."""
     user = UserSerializer(read_only=True)
     
     class Meta:
@@ -47,10 +50,11 @@ class OrganizationSerializer(serializers.ModelSerializer):
         )
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """Custom JWT token serializer that includes user type and username in token claims."""
+
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)
-        # Add custom claims
         token['username'] = user.username
         token['user_type'] = user.user_type
         return token

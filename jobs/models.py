@@ -1,7 +1,9 @@
 from django.db import models
 from users.models import User, Organization
 
+
 class Job(models.Model):
+    """Job posting created by an organization."""
     JOB_TYPE_CHOICES = (
         ("full_time", "Full-time"),
         ("part_time", "Part-time"),
@@ -22,7 +24,9 @@ class Job(models.Model):
     def __str__(self):
         return self.title
 
+
 class Application(models.Model):
+    """Job application submitted by a candidate."""
     STATUS_CHOICES = (
         ("pending", "Pending"),
         ("accepted", "Accepted"),

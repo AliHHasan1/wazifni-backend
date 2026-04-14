@@ -11,7 +11,9 @@ from .serializers import (
     ApplicationStatusUpdateSerializer,
 )
 
+
 class JobViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing job postings and applications."""
     queryset = Job.objects.all()
     serializer_class = JobSerializer
 
@@ -28,6 +30,7 @@ class JobViewSet(viewsets.ModelViewSet):
         return super().get_serializer_class()
 
     def _get_owned_job_application(self, request, job, application_id):
+        """Verify that the requesting user owns the job and return the application."""
         if request.user.user_type != "organization" or job.organization.user != request.user:
             return None, Response(
                 {"error": "You do not have permission to update applications for this job."},
@@ -38,6 +41,7 @@ class JobViewSet(viewsets.ModelViewSet):
         return application, None
 
     def _set_application_status(self, application, new_status):
+        """Update application status with validation to prevent changing finalized applications."""
         if application.status in self.FINAL_APPLICATION_STATUSES:
             return Response(
                 {
@@ -68,7 +72,7 @@ class JobViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
     def create(self, request, *args, **kwargs):
-        # Check if user is an organization and is approved by admin
+        """Create a new job posting. Only organizations can post jobs."""
         if request.user.user_type != 'organization':
             return Response({"error": "Only organizations can post jobs."}, status=status.HTTP_403_FORBIDDEN)
         
@@ -90,6 +94,7 @@ class JobViewSet(viewsets.ModelViewSet):
         permission_classes=[permissions.IsAuthenticated],
     )
     def my_jobs(self, request):
+        """List all jobs posted by the authenticated organization."""
         if request.user.user_type != "organization":
             return Response(
                 {"error": "Only organizations can view their posted jobs."},
@@ -115,8 +120,8 @@ class JobViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["get"], url_path="applications")
     def applications(self, request, pk=None):
+        """List all applications for a specific job (organization owner only)."""
         job = self.get_object()
-        # Ensure the requesting user is the owner of the job's organization
         if request.user.user_type != "organization" or job.organization.user != request.user:
             return Response({"error": "You do not have permission to view applications for this job."}, status=status.HTTP_403_FORBIDDEN)
         
@@ -131,6 +136,7 @@ class JobViewSet(viewsets.ModelViewSet):
         permission_classes=[permissions.IsAuthenticated],
     )
     def update_application_status(self, request, pk=None, application_id=None):
+        """Update application status to any valid status (organization owner only)."""
         job = self.get_object()
         application, error_response = self._get_owned_job_application(request, job, application_id)
         if error_response is not None:
@@ -150,6 +156,7 @@ class JobViewSet(viewsets.ModelViewSet):
         permission_classes=[permissions.IsAuthenticated],
     )
     def accept_application(self, request, pk=None, application_id=None):
+        """Accept a job application (organization owner only)."""
         job = self.get_object()
         application, error_response = self._get_owned_job_application(request, job, application_id)
         if error_response is not None:
@@ -164,6 +171,7 @@ class JobViewSet(viewsets.ModelViewSet):
         permission_classes=[permissions.IsAuthenticated],
     )
     def reject_application(self, request, pk=None, application_id=None):
+        """Reject a job application (organization owner only)."""
         job = self.get_object()
         application, error_response = self._get_owned_job_application(request, job, application_id)
         if error_response is not None:
@@ -171,12 +179,15 @@ class JobViewSet(viewsets.ModelViewSet):
 
         return self._set_application_status(application, "rejected")
 
+
 class ApplicationViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing job applications submitted by candidates."""
     queryset = Application.objects.all()
     serializer_class = ApplicationSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
+        """Filter applications based on user type (candidates see their own, organizations see theirs)."""
         queryset = self.queryset
         user = self.request.user
 
@@ -199,6 +210,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         return queryset
 
     def create(self, request, *args, **kwargs):
+        """Submit a new job application. Only candidates can apply."""
         if request.user.user_type != 'candidate':
             return Response({"error": "Only candidates can apply for jobs."}, status=status.HTTP_403_FORBIDDEN)
         
@@ -222,6 +234,7 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         serializer.save(candidate=self.request.user)
 
     def update(self, request, *args, **kwargs):
+        """Direct updates are not allowed. Applications can only be updated via job endpoints."""
         return Response(
             {
                 "error": (

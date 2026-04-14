@@ -6,24 +6,30 @@ from .serializers import UserSerializer, OrganizationSerializer, MyTokenObtainPa
 from .models import User, Organization
 from profiles.models import Profile
 
+
 class MyTokenObtainPairView(TokenObtainPairView):
+    """Custom token view that includes user type in JWT token."""
+
     serializer_class = MyTokenObtainPairSerializer
 
+
 class UserRegisterView(generics.CreateAPIView):
+    """Registration endpoint that automatically creates profile or organization based on user type."""
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.AllowAny]
 
     def perform_create(self, serializer):
+        """Automatically create associated profile based on user type."""
         user = serializer.save()
-        # Automatically create a Profile for candidate users
         if user.user_type == 'candidate':
             Profile.objects.get_or_create(user=user)
-        # Automatically create an Organization profile for organization users
         elif user.user_type == 'organization':
             Organization.objects.get_or_create(user=user, name=user.username)
 
+
 class UserProfileView(generics.RetrieveUpdateAPIView):
+    """View for users to retrieve and update their own profile."""
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -31,15 +37,17 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
         return self.request.user
 
 class OrganizationProfileView(generics.RetrieveUpdateAPIView):
+    """View for organizations to retrieve and update their organization profile."""
     serializer_class = OrganizationSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
-        # Ensure user has an organization profile
+        """Return organization profile, creating one if it does not exist."""
         org, created = Organization.objects.get_or_create(user=self.request.user, defaults={'name': self.request.user.username})
         return org
 
     def update(self, request, *args, **kwargs):
+        """Only organization users can update their organization profile."""
         if self.request.user.user_type != 'organization':
             return Response({"error": "Only organization users can have an organization profile."}, status=status.HTTP_403_FORBIDDEN)
         return super().update(request, *args, **kwargs)

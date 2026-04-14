@@ -6,8 +6,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 class GeminiAIService:
     def __init__(self):
+        """Initialize the AI service with API key from environment variables."""
         api_key = os.getenv("GEMINI_API_KEY")
 
         if not api_key:
@@ -21,6 +23,8 @@ class GeminiAIService:
             raise Exception(f"Model Initialization Failed: {str(e)}")
 
     def generate_tailored_cv_content(self, profile_data, job_description=None, user_prompt=None):
+        """Generate CV content using AI, optionally tailored for a specific job description."""
+        user = profile_data.get("user", {})
         user = profile_data.get("user", {})
         formatted_profile_data = {
             "personal_info": {

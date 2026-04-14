@@ -1,7 +1,9 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+
 class User(AbstractUser):
+    """Custom user model supporting multiple user types (candidate, organization, admin)."""
     USER_TYPE_CHOICES = (
         ("candidate", "Candidate"),
         ("organization", "Organization"),
@@ -18,7 +20,9 @@ class User(AbstractUser):
     def __str__(self):
         return self.username
 
+
 class Organization(models.Model):
+    """Organization profile linked to a user account."""
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, related_name="organization_profile")
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
