@@ -6,7 +6,7 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, related_name="candidate_profile")
     bio = models.TextField(blank=True, null=True)
     portfolio = models.URLField(max_length=200, blank=True, null=True)
-    linkedin = models.URLField(max_length=200, blank=True, null=True) # New field for LinkedIn
+    linkedin = models.URLField(max_length=200, blank=True, null=True)
 
     def __str__(self):
         return self.user.username

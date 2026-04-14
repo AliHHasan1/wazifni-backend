@@ -94,7 +94,7 @@ class PDFService:
                 end_date = self._sanitize_text(exp.get('end_date', ''))
                 is_current = exp.get('is_current', False)
 
-                date_str = f"{start_date} - {"Present" if is_current else end_date}"
+                date_str = f"{start_date} - {'Present' if is_current else end_date}"
                 
                 location = self._sanitize_text(exp.get("location", ""))
 
@@ -137,7 +137,7 @@ class PDFService:
                 end_date = self._sanitize_text(edu.get('end_date', ''))
                 is_current = edu.get('is_current', False)
 
-                date_str = f"{start_date} - {"Present" if is_current else end_date}"
+                date_str = f"{start_date} - {'Present' if is_current else end_date}"
                 
                 start_y = pdf.get_y()
                 pdf.multi_cell(page_width * 0.7, 8, f"{degree} in {field}", align='L')
