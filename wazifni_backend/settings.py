@@ -148,8 +148,8 @@ CORS_ALLOWED_ORIGINS = [
 AUTH_USER_MODEL = 'users.User'
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://*.railway.app',
-    'https://your-domain.up.railway.app',
+    "https://*.onrender.com",
+    "https://wazifni-backend-4n3s.onrender.com",
 ]
 
 CSRF_COOKIE_SECURE = True
