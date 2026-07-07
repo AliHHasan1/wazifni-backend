@@ -1,6 +1,6 @@
-import google.generativeai as genai
 import os
 import json
+from google import genai
 from django.conf import settings
 from dotenv import load_dotenv
 
@@ -15,10 +15,9 @@ class GeminiAIService:
         if not api_key:
             raise ValueError("Could not find GEMINI_API_KEY. Check your .env file.")
 
-        genai.configure(api_key=api_key)
-
         try:
-            self.model = genai.GenerativeModel("gemini-2.5-flash")
+            self.client = genai.Client(api_key=api_key)
+            self.model = "gemini-2.5-flash"
         except Exception as e:
             raise Exception(f"Model Initialization Failed: {str(e)}")
 
@@ -175,12 +174,18 @@ class GeminiAIService:
             full_prompt += f"\n\n**Additional User Instructions:**\n{user_prompt}"
 
         try:
-            response = self.model.generate_content(full_prompt)
+            response = self.client.models.generate_content(
+                model=self.model,
+                contents=full_prompt,
+            )
 
-            if not response or not response.candidates:
+            if not response:
                 raise Exception("AI returned an empty response (Check safety settings or quota).")
 
-            content = response.text.strip()
+            content = (response.text or "").strip()
+
+            if not content:
+                raise Exception("AI returned an empty response (Check safety settings or quota).")
 
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0].strip()
