@@ -31,14 +31,54 @@ class JobViewSet(viewsets.ModelViewSet):
 
     def _get_owned_job_application(self, request, job, application_id):
         """Verify that the requesting user owns the job and return the application."""
-        if request.user.user_type != "organization" or job.organization.user != request.user:
-            return None, Response(
-                {"error": "You do not have permission to update applications for this job."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
+        error_response = self._validate_verified_job_owner(request, job)
+        if error_response is not None:
+            return None, error_response
 
         application = get_object_or_404(job.applications, pk=application_id)
         return application, None
+
+    def _get_verified_organization_profile(self, request):
+        if request.user.user_type != "organization":
+            return None, Response(
+                {"error": "Only organizations can perform this action."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        try:
+            org_profile = request.user.organization_profile
+        except AttributeError:
+            return None, Response(
+                {"error": "Organization profile not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if not org_profile.is_verified:
+            return None, Response(
+                {
+                    "error": (
+                        "Organization account must be verified by an admin before "
+                        "posting jobs or managing job applications."
+                    ),
+                    "verification_status": org_profile.verification_status,
+                },
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        return org_profile, None
+
+    def _validate_verified_job_owner(self, request, job):
+        org_profile, error_response = self._get_verified_organization_profile(request)
+        if error_response is not None:
+            return error_response
+
+        if job.organization != org_profile:
+            return Response(
+                {"error": "You do not have permission to manage this job."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        return None
 
     def _set_application_status(self, application, new_status):
         """Update application status with validation to prevent changing finalized applications."""
@@ -72,20 +112,36 @@ class JobViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
     def create(self, request, *args, **kwargs):
-        """Create a new job posting. Only organizations can post jobs."""
-        if request.user.user_type != 'organization':
-            return Response({"error": "Only organizations can post jobs."}, status=status.HTTP_403_FORBIDDEN)
-        
-        try:
-            org_profile = request.user.organization_profile
-
-        except AttributeError:
-            return Response({"error": "Organization profile not found."}, status=status.HTTP_404_NOT_FOUND)
+        """Create a new job posting. Only verified organizations can post jobs."""
+        org_profile, error_response = self._get_verified_organization_profile(request)
+        if error_response is not None:
+            return error_response
             
         return super().create(request, *args, **kwargs)
 
     def perform_create(self, serializer):
         serializer.save(organization=self.request.user.organization_profile)
+
+    def update(self, request, *args, **kwargs):
+        job = self.get_object()
+        error_response = self._validate_verified_job_owner(request, job)
+        if error_response is not None:
+            return error_response
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        job = self.get_object()
+        error_response = self._validate_verified_job_owner(request, job)
+        if error_response is not None:
+            return error_response
+        return super().partial_update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        job = self.get_object()
+        error_response = self._validate_verified_job_owner(request, job)
+        if error_response is not None:
+            return error_response
+        return super().destroy(request, *args, **kwargs)
 
     @action(
         detail=False,
@@ -122,8 +178,9 @@ class JobViewSet(viewsets.ModelViewSet):
     def applications(self, request, pk=None):
         """List all applications for a specific job (organization owner only)."""
         job = self.get_object()
-        if request.user.user_type != "organization" or job.organization.user != request.user:
-            return Response({"error": "You do not have permission to view applications for this job."}, status=status.HTTP_403_FORBIDDEN)
+        error_response = self._validate_verified_job_owner(request, job)
+        if error_response is not None:
+            return error_response
         
         applications = job.applications.all()
         serializer = ApplicationSerializer(applications, many=True)

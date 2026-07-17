@@ -23,10 +23,35 @@ class User(AbstractUser):
 
 class Organization(models.Model):
     """Organization profile linked to a user account."""
+    VERIFICATION_STATUS_PENDING = "pending"
+    VERIFICATION_STATUS_APPROVED = "approved"
+    VERIFICATION_STATUS_REJECTED = "rejected"
+    VERIFICATION_STATUS_CHOICES = (
+        (VERIFICATION_STATUS_PENDING, "Pending"),
+        (VERIFICATION_STATUS_APPROVED, "Approved"),
+        (VERIFICATION_STATUS_REJECTED, "Rejected"),
+    )
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True, related_name="organization_profile")
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
     location = models.CharField(max_length=255, blank=True, null=True)
+    verification_document = models.FileField(
+        upload_to="organizations/verification_documents/",
+        blank=True,
+        null=True,
+    )
+    verification_status = models.CharField(
+        max_length=20,
+        choices=VERIFICATION_STATUS_CHOICES,
+        default=VERIFICATION_STATUS_PENDING,
+    )
+    verified_at = models.DateTimeField(blank=True, null=True)
+    rejection_reason = models.TextField(blank=True, null=True)
+
+    @property
+    def is_verified(self):
+        return self.verification_status == self.VERIFICATION_STATUS_APPROVED
 
     def __str__(self):
         return self.name
